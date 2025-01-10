@@ -1,0 +1,14 @@
+﻿################################################################################
+# Ce fichier .gitignore a été automatiquement créé par Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/.vs/ProjectSettings.json
+/.vs/RLY88-Chataigne-Module-main
+/.vs/RLY88-Chataigne-Module-main/FileContentIndex
+/.vs/RLY88-Chataigne-Module-main/FileContentIndex/a5eb8de6-1ace-4426-9d6b-72175260eedc.vsidx
+/.vs/RLY88-Chataigne-Module-main/v17
+/.vs/RLY88-Chataigne-Module-main/v17/.wsuo
+/.vs/RLY88-Chataigne-Module-main/v17/DocumentLayout.json
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
