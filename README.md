@@ -1,6 +1,9 @@
-# Sample-Chataigne-module
-This is a sample Chataigne custom module. More info about Chataigne : https://benjamin.kuperberg.fr/chataigne
+# RLY88-Chataigne-Module
+This is Chataigne custom module that interface a USB-OPTO-RLY88 board from Robots Electronics . More info about it : https://www.robot-electronics.co.uk/htm/usb_opto_rly88tech.htm
 
-To create a custom module, fork this repository (if you want to use Git for version control or share it with the community) or download it then place the folder inside your `<Documents>/Chataigne/modules` folder.
+It is listed in the "Hardware" module sub menu.
+Add the module, select the COM port to which RLY88 board is connected , and you will be able to get inputs states and set relay states.
 
-You may want to check out the custom module documentation here : https://bkuperberg.gitbook.io/chataigne-docs/modules/custom-modules/making-your-own-module
+/!\ This is a beta version so use it at your own risks.
+
+
