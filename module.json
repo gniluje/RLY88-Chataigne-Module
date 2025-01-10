@@ -1,0 +1,131 @@
+{
+  "name": "RLY88 Robot Electronics",
+  "type": "Serial",
+  "path": "Hardware",
+
+  "version": "0.0.1",
+  "description": "BETA - Special Serial Module for USB-OPTO-RLY88 IO card from Robot Electornics (8 opto inputs and 8 30V/2A relays). Check https://www.robot-electronics.co.uk/htm/usb_opto_rly88tech.htm",
+  "url": "https://github.com/tommag/Sample-Chataigne-module",
+  "downloadURL": "https://github.com/tommag/Sample-Chataigne-module/archive/master.zip",
+
+  "hasInput": true,
+  "hasOutput": true,
+  "hideDefaultCommands": false,
+
+  "defaults": {
+    "Protocol": "Raw",
+    "BaudRate": 921600,
+    "autoAdd": false
+  },
+
+  "hideDefaultParameters": [
+    "protocol",
+    "autoAdd",
+    "messageStructure",
+    "customSeparator",
+    "dtr",
+    "rts",
+    "firstValueIsTheName"
+  ],
+
+  "parameters": {
+    "Board ID": {
+      "type": "String"
+    },
+    "All Relays On": {
+      "type": "Trigger"
+    },
+    "All Relays Off": {
+      "type": "Trigger"
+
+    }
+  },
+
+  "values": {
+    "Inputs": {
+      "type": "Container",
+      "collapsed": true,
+      "Input 1": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 2": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 3": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 4": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 5": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 6": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 7": {
+        "type": "Boolean",
+        "readOnly": true
+      },
+      "Input 8": {
+        "type": "Boolean",
+        "readOnly": true
+      }
+    },
+    "Outputs": {
+      "type": "Container",
+      "collapsed": true,
+      "Output 1": {
+        "type": "Boolean"
+      },
+      "Output 2": {
+        "type": "Boolean"
+      },
+      "Output 3": {
+        "type": "Boolean"
+      },
+      "Output 4": {
+        "type": "Boolean"
+      },
+      "Output 5": {
+        "type": "Boolean"
+      },
+      "Output 6": {
+        "type": "Boolean"
+      },
+      "Output 7": {
+        "type": "Boolean"
+      },
+      "Output 8": {
+        "type": "Boolean"
+      }
+    }
+  },
+
+  "scripts": [
+    "RLY88.js"
+  ],
+
+
+  "commands": {
+
+    "Custom command": {
+      "menu": "",
+      "callback": "customCmd",
+      "parameters": {
+        "Value": {
+          "type": "Integer",
+          "min": 0,
+          "max": 100,
+          "default": 0
+        }
+      }
+    }
+  }
+}
