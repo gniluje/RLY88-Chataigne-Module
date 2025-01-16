@@ -10,7 +10,7 @@ var BoardID = -1;  //Unique Board ID which is 12 for the RLY88
 
 var IODataMuxer = 0; //0 : Input ---  1 : Output - Data muxer to prevent serial message missing
 
-script.updateRate.set(50); //update rate set to 50, could be decreased a bit if heavy serial load
+script.updateRate.set(100); //update rate set to 50, could be decreased a bit if heavy serial load
 
 function init() {
     ModuleID = -1;
@@ -91,15 +91,15 @@ function dataReceived(data) { //serial received management
             }
         } else if (IODataMuxer == 1 && data.length == 1) { //Outputs related message handling
             //script.log("data received : " + data[0]);
+			var boolstate = 0;
             for (var i = 0; i < outputNumber; i++) {
-                local.values.outputs.getChild('Output ' + (i + 1)).set(getBitFromUIntDecimal(data[0], i));
+                boolstate = (data[0] >> i) & 0x01;
+				//check if there is a difference between chataigne relay state and board relay state in order to resync states if problem
+				if(boolstate != local.values.outputs.getChild('Output ' + (i + 1)).get()){	
+					local.values.outputs.getChild('Output ' + (i + 1)).set(boolstate);
+				}
             }
         }
-        IODataMuxer = !IODataMuxer;
+        IODataMuxer = IODataMuxer;
     }
-
-}
-
-function getBitFromUIntDecimal(N,pos) { //function that returns a specific bit of a decimal number
-    return N = (N >> pos) & 0x01;
 }
