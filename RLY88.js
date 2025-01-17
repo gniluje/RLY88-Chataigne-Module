@@ -3,6 +3,15 @@
 var inputNumber = 8;
 var outputNumber = 8;
 
+var currentInputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+var currentOutputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+
+var rcvDataInputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+var rcvDataOutputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+
+var allRelayTrigger = 0;
+var noRelayTrigger = 0;
+
 var RLY88ID = 12; //RLY88 specific ID given by the vendor
 
 var ModuleID = -1; //Module ID which is 12 for the RLY88
@@ -36,37 +45,91 @@ function moduleParameterChanged(param) { //event trigged when a parameter is mod
     } else { //trigger click management
         script.log(param.name + " trigger clicked");
         if (param.is(local.parameters.allRelaysOn)) { //trigger enabling to set all the relays ON
-            local.sendBytes(100); //serial command 100 set all the relay to ON state
+            allRelayTrigger = 1;
         } else if (param.is(local.parameters.allRelaysOff)) { //trigger enabling to set all the relays OFF
-            local.sendBytes(110); //serial command 110 set all the relay to OFF state
+            noRelayTrigger = 1;
         }
     }
 }
 
 function moduleValueChanged(value) { //event trigged when a value is modified
     script.log(value.name + " value changed, new value: " + value.get());
-
-    if (value.name.substring(0, 6) == "output") { //output value change management
-        var cmd = 110 + parseInt(value.name.substring(6, 7)) - value.get() * 10; //build integer which will be sent through serial to change state of specific relay
-        script.log("sending command : " + cmd);
-        local.sendBytes(cmd);
-    }
 }
 
 function update(deltaTime) { //loop function, delta time can be changed thanks to : script.updateRate.set([your update rate]);
     if (local.parameters.isConnected.get()) {
         if (ModuleID != RLY88ID) {  //try to get a potential Module ID
             local.sendBytes(90);
-        } else if (BoardID == -1) { //if Module ID is 12 (RLY88 confirmed), get board number
+        } else if (BoardID == -1) { //if Module ID is 12 (RLY88 confirmed), get board number and reset relay to off
             local.sendBytes(56);
+            local.sendBytes(110);
         } else {                    //if RLY88 is confirmed with its board number, send alternatively a message to get input and output states
             local.sendBytes(!IODataMuxer * 26 + IODataMuxer * 91); //26 returns an array of 8 bytes descibing inputs states, 91 returs 1 byte that decribes output states (binary)
+        }
+
+        if (allRelayTrigger) {
+            local.sendBytes(100); //serial command 100 set all the relay to ON state
+            for (var i = 0; i < outputNumber; i++) {
+                local.values.outputs.getChild('Output ' + (i + 1)).set(1);
+            }
+            currentOutputStates = [1, 1, 1, 1, 1, 1, 1, 1];
+            rcvDataOutputStates = [1, 1, 1, 1, 1, 1, 1, 1];
+            allRelayTrigger = 0;
+        } else if (noRelayTrigger) {
+            local.sendBytes(110); //serial command 100 set all the relay to ON state
+            for (var i = 0; i < outputNumber; i++) {
+                local.values.outputs.getChild('Output ' + (i + 1)).set(0);
+            }
+            currentOutputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+            rcvDataOutputStates = [0, 0, 0, 0, 0, 0, 0, 0];
+            noRelayTrigger = 0;
+        } else{
+
+            //script.log("I data received : " + rcvDataInputStates.join());
+            //script.log("O data received : " + rcvDataOutputStates.join());
+
+            if (!IODataMuxer) {//Input states update
+                inputStateUpdate(rcvDataInputStates);
+                arrayCopy(rcvDataInputStates, currentInputStates, inputNumber);
+            } else { //Output states update;
+                outputStateUpdate(rcvDataOutputStates);
+                arrayCopy(rcvDataOutputStates, currentOutputStates, outputNumber);
+                IODataMuxer = 0;
+            }
+        }
+        //script.log("Current Input array = " + currentInputStates.join());
+        //script.log("Current Output array = " + currentOutputStates.join());    
+    }
+}
+
+function arrayCopy(src, dst, size) {
+    for (var i = 0; i < size; i++) {
+        dst[i] = src[i];
+    }
+}
+
+function inputStateUpdate(array) {
+    for (var i = 0; i < inputNumber; i++) {
+        local.values.inputs.getChild('Input ' + (i + 1)).set(array[i]);
+    }
+}
+
+function outputStateUpdate(array) {
+    for (var i = 0; i < outputNumber; i++) {
+        var tmpState = local.values.outputs.getChild('Output ' + (i + 1)).get();
+        //script.log("tmpstate : " + tmpState);
+        if (tmpState != array[i]) {
+            local.values.outputs.getChild('Output ' + (i + 1)).set(tmpState);
+            var cmd = 110 + (i + 1) - tmpState * 10; //build integer which will be sent through serial to change state of specific relay
+            script.log("cmd sent : " + cmd);
+            local.sendBytes(cmd);
+            array[i] = tmpState;
         }
     }
 }
 
 function dataReceived(data) { //serial received management
-    
+
     //script.log("data received : " + data + " data length : " + data.length);
     if (ModuleID != RLY88ID) { //Module ID message handling
         local.parameters.boardID.set("No RLY88 board detected");
@@ -84,22 +147,19 @@ function dataReceived(data) { //serial received management
             local.values.outputs.setCollapsed(false);
         }
     } else { //IO muxed messages handling
-        if (IODataMuxer == 0 && data.length == inputNumber) { //Inputs related message handling
+        if (data.length == inputNumber && IODataMuxer == 0) { //Inputs related message handling
+            //script.log("Receive Input");
             for (var i = 0; i < data.length; i++) {
-                //script.log(local.values.inputs.getChild('Input ' + (i + 1)).name);
-                local.values.inputs.getChild('Input ' + (i + 1)).set(data[i] / 255);
+                rcvDataInputStates[i] = data[i] ? 1 : 0;
             }
-        } else if (IODataMuxer == 1 && data.length == 1) { //Outputs related message handling
-            //script.log("data received : " + data[0]);
-			var boolstate = 0;
+            IODataMuxer = 1;
+        } else if (data.length == 1 && IODataMuxer == 1) { //Outputs related message handling
+            //script.log("Receive Output");
             for (var i = 0; i < outputNumber; i++) {
-                boolstate = (data[0] >> i) & 0x01;
-				//check if there is a difference between chataigne relay state and board relay state in order to resync states if problem
-				if(boolstate != local.values.outputs.getChild('Output ' + (i + 1)).get()){	
-					local.values.outputs.getChild('Output ' + (i + 1)).set(boolstate);
-				}
+                var boolstate = (data[0] >> i) & 0x01;
+                rcvDataOutputStates[i] = (data[0] >> i) & 0x01;
             }
+            IODataMuxer = 0;
         }
-        IODataMuxer = IODataMuxer;
-    }
+    } 
 }
