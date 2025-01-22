@@ -19,8 +19,6 @@ var BoardID = -1;  //Unique Board ID which is 12 for the RLY88
 
 var IODataMuxer = 0; //0 : Input ---  1 : Output - Data muxer to prevent serial message missing
 
-script.updateRate.set(100); //update rate set to 50, could be decreased a bit if heavy serial load
-
 function init() {
     ModuleID = -1;
     BoardID = -1;
@@ -39,7 +37,9 @@ function moduleParameterChanged(param) { //event trigged when a parameter is mod
                 BoardID = -1;  //reset Board ID 
                 local.values.inputs.setCollapsed(true);  //hide input values
                 local.values.outputs.setCollapsed(true); //hide output values
-            }      
+            }
+        } else if (param.is(local.parameters.updateRate)) {
+            script.updateRate.set(param.get()); //update rate parameter management, could be decreased a bit if heavy serial load
         }
 
     } else { //trigger click management
@@ -89,41 +89,31 @@ function update(deltaTime) { //loop function, delta time can be changed thanks t
             //script.log("O data received : " + rcvDataOutputStates.join());
 
             if (!IODataMuxer) {//Input states update
-                inputStateUpdate(rcvDataInputStates);
-                arrayCopy(rcvDataInputStates, currentInputStates, inputNumber);
+                inputStateUpdate();
+
             } else { //Output states update;
-                outputStateUpdate(rcvDataOutputStates);
-                arrayCopy(rcvDataOutputStates, currentOutputStates, outputNumber);
-                IODataMuxer = 0;
+                outputStateUpdate();  
             }
+            //script.log("Current Input array = " + currentInputStates.join());
+            //script.log("Current Output array = " + currentOutputStates.join()); 
         }
-        //script.log("Current Input array = " + currentInputStates.join());
-        //script.log("Current Output array = " + currentOutputStates.join());    
     }
 }
 
-function arrayCopy(src, dst, size) {
-    for (var i = 0; i < size; i++) {
-        dst[i] = src[i];
-    }
-}
-
-function inputStateUpdate(array) {
+function inputStateUpdate() { //Update input states in regards to the states get by serial message
     for (var i = 0; i < inputNumber; i++) {
-        local.values.inputs.getChild('Input ' + (i + 1)).set(array[i]);
+        local.values.inputs.getChild('Input ' + (i + 1)).set(rcvDataInputStates[i]);
+        currentInputStates[i] = rcvDataInputStates[i];
     }
 }
 
-function outputStateUpdate(array) {
+function outputStateUpdate() { //Send serial command to update the relay states in regards to the GUI command
     for (var i = 0; i < outputNumber; i++) {
-        var tmpState = local.values.outputs.getChild('Output ' + (i + 1)).get();
-        //script.log("tmpstate : " + tmpState);
-        if (tmpState != array[i]) {
-            local.values.outputs.getChild('Output ' + (i + 1)).set(tmpState);
-            var cmd = 110 + (i + 1) - tmpState * 10; //build integer which will be sent through serial to change state of specific relay
-            script.log("cmd sent : " + cmd);
+        currentOutputStates[i] = local.values.outputs.getChild('Output ' + (i + 1)).get();
+        if (rcvDataOutputStates[i] != currentOutputStates[i]) {
+            var cmd = 110 + (i + 1) - currentOutputStates[i] * 10; //build integer which will be sent through serial to change state of specific relay
             local.sendBytes(cmd);
-            array[i] = tmpState;
+            //script.log("cmd sent : " + cmd);
         }
     }
 }
@@ -147,19 +137,20 @@ function dataReceived(data) { //serial received management
             local.values.outputs.setCollapsed(false);
         }
     } else { //IO muxed messages handling
+        script.log("IODataMuxer : " + IODataMuxer);
         if (data.length == inputNumber && IODataMuxer == 0) { //Inputs related message handling
-            //script.log("Receive Input");
+            script.log("Receive Input");
             for (var i = 0; i < data.length; i++) {
                 rcvDataInputStates[i] = data[i] ? 1 : 0;
             }
-            IODataMuxer = 1;
+            IODataMuxer = 1; //Input message received, output request can be sent
         } else if (data.length == 1 && IODataMuxer == 1) { //Outputs related message handling
-            //script.log("Receive Output");
+            script.log("Receive Output");
             for (var i = 0; i < outputNumber; i++) {
                 var boolstate = (data[0] >> i) & 0x01;
                 rcvDataOutputStates[i] = (data[0] >> i) & 0x01;
             }
-            IODataMuxer = 0;
+            IODataMuxer = 0;//Output message received, input request can be sent
         }
     } 
 }

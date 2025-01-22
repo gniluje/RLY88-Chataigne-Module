@@ -32,6 +32,10 @@
     "Board ID": {
       "type": "String"
     },
+    "Update Rate": {
+      "type": "Integer",
+      "default" :  100
+    },
     "All Relays On": {
       "type": "Trigger"
     },
