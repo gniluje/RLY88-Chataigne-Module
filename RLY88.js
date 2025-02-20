@@ -154,3 +154,12 @@ function dataReceived(data) { //serial received management
         }
     } 
 }
+
+function setRelayState(relayNumber, stateWanted){
+    local.values.outputs.getChild('Output ' + (relayNumber)).set(stateWanted);
+}
+
+function toggleRelay(relayNumber){
+    var newState = !(local.values.outputs.getChild('Output ' + (relayNumber)).get());
+    local.values.outputs.getChild('Output ' + (relayNumber)).set(newState);
+}

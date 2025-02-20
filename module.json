@@ -3,14 +3,14 @@
   "type": "Serial",
   "path": "Hardware",
 
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "BETA - Special Serial Module for USB-OPTO-RLY88 IO card from Robot Electornics (8 opto inputs and 8 30V/2A relays). Check https://www.robot-electronics.co.uk/htm/usb_opto_rly88tech.htm",
   "url": "https://github.com/gniluje/RLY88-Chataigne-Module",
   "downloadURL": "https://github.com/gniluje/RLY88-Chataigne-Module/archive/master.zip",
 
   "hasInput": true,
   "hasOutput": true,
-  "hideDefaultCommands": false,
+  "hideDefaultCommands": true,
 
   "defaults": {
     "Protocol": "Raw",
@@ -119,15 +119,35 @@
 
   "commands": {
 
-    "Custom command": {
+    "Set Relay State": {
       "menu": "",
-      "callback": "customCmd",
+      "callback": "setRelayState",
       "parameters": {
-        "Value": {
+        "Relay": {
           "type": "Integer",
-          "min": 0,
-          "max": 100,
-          "default": 0
+          "default": 1,
+          "min" : 1,
+          "max" : 8,
+          "description" : "Relay number you want to change state"
+        },
+        "State": {
+          "type": "Boolean",
+          "default": 0,
+          "description" : "Set relay state"
+        }
+      }
+    },
+
+    "Toggle Relay State": {
+      "menu": "",
+      "callback": "toggleRelay",
+      "parameters": {
+        "Relay": {
+          "type": "Integer",
+          "default": 1,
+          "min" : 1,
+          "max" : 8,
+          "description" : "Relay number you want to toggle"
         }
       }
     }
