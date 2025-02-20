@@ -17,12 +17,23 @@ var RLY88ID = 12; //RLY88 specific ID given by the vendor
 var ModuleID = -1; //Module ID which is 12 for the RLY88
 var BoardID = -1;  //Unique Board ID which is 12 for the RLY88
 
+//Specific USB tools variables
+var findBoard = 0;
+var wantedBoardID = -1;
+var ports;
+var comPortsNumber;
+var indexToCheck = 1;
+var timeOut = 1;
+var timeFindBoard;
+
 var IODataMuxer = 0; //0 : Input ---  1 : Output - Data muxer to prevent serial message missing
 
 function init() {
     ModuleID = -1;
     BoardID = -1;
+    wantedBoardID = -1;
     script.updateRate.set(local.parameters.updateRate.get()); //set to default value
+    timeOutCounter = local.parameters.updateRate.get();
     script.log("RLY88 module init done");
 }
 
@@ -49,7 +60,25 @@ function moduleParameterChanged(param) { //event trigged when a parameter is mod
             allRelayTrigger = 1;
         } else if (param.is(local.parameters.allRelaysOff)) { //trigger enabling to set all the relays OFF
             noRelayTrigger = 1;
-        }
+        } else if (param.is(local.parameters.usbTools.findRLY88Board)) { //trigger enabling finding boards
+            script.log("reset");
+            ports = local.parameters.port.getAllOptions();
+            comPortsNumber = ports.length;
+            if(comPortsNumber > 1) {
+                local.parameters.port.set(ports[0].key);
+                BoardID = -1;
+                local.parameters.boardID.set("");
+                wantedBoardID = parseInt(local.parameters.usbTools.idWanted.get());
+                indexToCheck = 1;
+                timeFindBoard = util.getTime();
+                findBoard = 1;
+                local.parameters.port.set(ports[1].key);
+                script.log("wantedBoardID = " + wantedBoardID);
+            } else {
+                local.parameters.boardID.set("No port COM detected");
+            }
+
+        }    
     }
 }
 
@@ -61,11 +90,40 @@ function update(deltaTime) { //loop function, delta time can be changed thanks t
     if (local.parameters.isConnected.get()) {
         if (ModuleID != RLY88ID) {  //try to get a potential Module ID
             local.sendBytes(90);
+            if(findBoard && (util.getTime() - timeFindBoard > timeOut)){
+                timeFindBoard = util.getTime();
+                indexToCheck++;
+                if (indexToCheck < comPortsNumber){
+                    local.parameters.port.set(ports[indexToCheck].key);
+                } else {
+                    findBoard = 0;
+                    local.parameters.port.set(ports[0].key);
+                    local.parameters.boardID.set("No board found");
+                }
+
+            }
         } else if (BoardID == -1) { //if Module ID is 12 (RLY88 confirmed), get board number and reset relay to off
+            script.log("Board found, checking ID");
             local.sendBytes(56);
-            local.sendBytes(110);
-        } else {                    //if RLY88 is confirmed with its board number, send alternatively a message to get input and output states
+            local.sendBytes(110); //reset relay to off
+        } else {   //if RLY88 is confirmed with its board number, send alternatively a message to get input and output states
+            script.log("BoardID = " + BoardID + " wantedBoardID = " + wantedBoardID);
+            script.log("findBoard = " + findBoard + " util.getTime() = " + (util.getTime() - timeFindBoard > timeOut)  + " wantedBoardID = " + wantedBoardID  + " BoardID = " + BoardID );
+            if(findBoard && (util.getTime() - timeFindBoard < timeOut) && (wantedBoardID != 0) && (BoardID == wantedBoardID)){
+                findBoard = 0;
+            }else if(findBoard && (util.getTime() - timeFindBoard > timeOut) && (wantedBoardID != 0) && (BoardID != wantedBoardID)){
+                timeFindBoard = util.getTime();
+                indexToCheck++;
+                if (indexToCheck < comPortsNumber){
+                    local.parameters.port.set(ports[indexToCheck].key);
+                } else {
+                    findBoard = 0;
+                    local.parameters.port.set(ports[0].key);
+                    local.parameters.boardID.set("No board found");
+                }
+            } else {
             local.sendBytes(!IODataMuxer * 26 + IODataMuxer * 91); //26 returns an array of 8 bytes descibing inputs states, 91 returs 1 byte that decribes output states (binary)
+            }
         }
 
         if (allRelayTrigger) {
@@ -98,8 +156,8 @@ function update(deltaTime) { //loop function, delta time can be changed thanks t
             //script.log("Current Input array = " + currentInputStates.join());
             //script.log("Current Output array = " + currentOutputStates.join()); 
         }
-    } else {
-        root.modules.rly88RobotElectronics.parameters.port.get();
+    }else if(findBoard) {
+        local.parameters.port.set(local.parameters.port.getAllOptions()[indexToCheck].key);
     }
 }
 
@@ -133,22 +191,22 @@ function dataReceived(data) { //serial received management
 
     } else if (BoardID == -1) { //Board ID message handling
         if (data.length == 8) {
-            script.log("RLY88 Board ID data received : " + data.join());
+            //script.log("RLY88 Board ID data received : " + data.join());
             BoardID = data.join();
             local.parameters.boardID.set(BoardID);
             local.values.inputs.setCollapsed(false);
             local.values.outputs.setCollapsed(false);
         }
     } else { //IO muxed messages handling
-        script.log("IODataMuxer : " + IODataMuxer);
+        //script.log("IODataMuxer : " + IODataMuxer);
         if (data.length == inputNumber && IODataMuxer == 0) { //Inputs related message handling
-            script.log("Receive Input");
+            //script.log("Receive Input");
             for (var i = 0; i < data.length; i++) {
                 rcvDataInputStates[i] = data[i] ? 1 : 0;
             }
             IODataMuxer = 1; //Input message received, output request can be sent
         } else if (data.length == 1 && IODataMuxer == 1) { //Outputs related message handling
-            script.log("Receive Output");
+            //script.log("Receive Output");
             for (var i = 0; i < outputNumber; i++) {
                 var boolstate = (data[0] >> i) & 0x01;
                 rcvDataOutputStates[i] = (data[0] >> i) & 0x01;

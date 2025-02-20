@@ -4,7 +4,7 @@
   "path": "Hardware",
 
   "version": "0.1.1",
-  "description": "BETA - Special Serial Module for USB-OPTO-RLY88 IO card from Robot Electornics (8 opto inputs and 8 30V/2A relays). Check https://www.robot-electronics.co.uk/htm/usb_opto_rly88tech.htm",
+  "description": "BETA - Special Serial Module for USB-OPTO-RLY88 IO Board from Robot Electornics (8 opto inputs and 8 30V/2A relays). Check https://www.robot-electronics.co.uk/htm/usb_opto_rly88tech.htm",
   "url": "https://github.com/gniluje/RLY88-Chataigne-Module",
   "downloadURL": "https://github.com/gniluje/RLY88-Chataigne-Module/archive/master.zip",
 
@@ -25,10 +25,24 @@
     "customSeparator",
     "dtr",
     "rts",
-    "firstValueIsTheName"
+    "firstValueIsTheName",
+    "pass_through"
   ],
 
   "parameters": {
+    "USB tools" : {
+      "type": "Container",
+      "collapsed": true,
+      "Find RLY88 Board" : {
+        "type" : "Trigger",
+        "description" : "Look for a RLY88 Board, the first available if ID wanted is blank, or the one with specified ID below"
+      },
+      "ID wanted" : {
+        "type" : "String",
+        "default" : "",
+        "description" : "ID of the Board you are looking for, if blank it will look for the first Board available"
+      }
+    },
     "Board ID": {
       "type": "String"
     },
@@ -41,7 +55,6 @@
     },
     "All Relays Off": {
       "type": "Trigger"
-
     }
   },
 
