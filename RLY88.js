@@ -22,6 +22,7 @@ var IODataMuxer = 0; //0 : Input ---  1 : Output - Data muxer to prevent serial 
 function init() {
     ModuleID = -1;
     BoardID = -1;
+    script.updateRate.set(local.parameters.updateRate.get()); //set to default value
     script.log("RLY88 module init done");
 }
 
@@ -97,6 +98,8 @@ function update(deltaTime) { //loop function, delta time can be changed thanks t
             //script.log("Current Input array = " + currentInputStates.join());
             //script.log("Current Output array = " + currentOutputStates.join()); 
         }
+    } else {
+        root.modules.rly88RobotElectronics.parameters.port.get();
     }
 }
 
